@@ -2,12 +2,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const getLocationBtn = document.getElementById("getLocationBtn");
     const coordinatesOutput = document.getElementById("coordinatesOutput");
     const mapContainer = document.getElementById("mapContainer");
+    const savedLocationOutput = document.getElementById("savedLocationOutput");
 
     getLocationBtn.addEventListener("click", getUserLocation);
 
     let map;
     let marker;
     let geocoder;
+    let savedLocation;
 
     async function getUserLocation() {
         if ("geolocation" in navigator) {
@@ -25,7 +27,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const latitude = position.coords.latitude;
                 const longitude = position.coords.longitude;
 
-                const apiKey = "AIzaSyA61BNpZgLf0F1qm0oW7xZ0ruNe19EDAnE";
+                const apiKey = "YOUR_GEOLOCATION_API";
                 const geolocationUrl = `https://www.googleapis.com/geolocation/v1/geolocate?key=${apiKey}`;
 
                 const geolocationResponse = await fetch(geolocationUrl, {
@@ -49,7 +51,13 @@ document.addEventListener("DOMContentLoaded", function () {
                             <p>${address}</p>
                         `;
 
-                        initMap(latitude, longitude, address);
+                        initMap(latitude, longitude);
+
+                        savedLocation = {
+                            latitude: latitude,
+                            longitude: longitude,
+                            address: address,
+                        };
                     } else {
                         console.error("Erro ao obter detalhes de endereço: ", status);
                     }
@@ -62,13 +70,18 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    function initMap(latitude, longitude, address) {
+    function initMap(latitude, longitude) {
         const mapOptions = {
             center: { lat: latitude, lng: longitude },
             zoom: 15,
         };
 
         map = new google.maps.Map(mapContainer, mapOptions);
+
+        if (marker) {
+            marker.setMap(null);
+            marker = null;
+        }
 
         marker = new google.maps.Marker({
             position: { lat: latitude, lng: longitude },
@@ -89,9 +102,26 @@ document.addEventListener("DOMContentLoaded", function () {
         geocoder.geocode({ location: newLatLng }, function (results, status) {
             if (status === "OK" && results[0]) {
                 const newAddress = results[0].formatted_address;
-                coordinatesOutput.querySelector("p:last-child").innerHTML = `<strong>Endereço:</strong><br>${newAddress}`;
+                updateExtrato(newLat, newLng, newAddress);
             }
         });
+    }
+
+    function updateExtrato(latitude, longitude, address) {
+        coordinatesOutput.innerHTML = `
+            <p><strong>Coordenadas:</strong></p>
+            <p>Latitude: ${latitude.toFixed(6)}</p>
+            <p>Longitude: ${longitude.toFixed(6)}</p>
+            <hr>
+            <p><strong>Endereço:</strong></p>
+            <p>${address}</p>
+        `;
+    }
+
+    const savedLocationData = localStorage.getItem("savedLocation");
+    if (savedLocationData) {
+        savedLocation = JSON.parse(savedLocationData);
+
     }
 
     geocoder = new google.maps.Geocoder();
